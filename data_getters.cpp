@@ -55,37 +55,42 @@ double getUsedDiskPercentage() {
     return percentage;
 }
 
-// Function to get the used memory percentage
-double getUsedMemoryPercentage() {
+double getUsedCPUPercentage() {
     double percentage = 0.0;
 
-    // Open the "/proc/meminfo" file to read memory information
-    std::ifstream meminfo("/proc/meminfo");
-    if (meminfo.is_open()) {
+    // Open the "/proc/stat" file to read CPU information
+    std::ifstream stat("/proc/stat");
+    if (stat.is_open()) {
         std::string line;
-        while (std::getline(meminfo, line)) {
-            if (line.substr(0, 9) == "MemTotal:") {
-                // Get the total memory size
-                double totalMemory;
-                std::istringstream iss(line.substr(9));
-                iss >> totalMemory;
+        while (std::getline(stat, line)) {
+            if (line.substr(0, 3) == "cpu") {
+                std::istringstream iss(line);
+                std::string cpuLabel;
+                iss >> cpuLabel;
 
-                // Read the next line to get the used memory
-                std::getline(meminfo, line);
-                if (line.substr(0, 7) == "MemUsed:") {
-                    // Get the used memory
-                    double usedMemory;
-                    std::istringstream iss(line.substr(7));
-                    iss >> usedMemory;
+                // Check if the line corresponds to the "cpu" or "cpu0" entry
+                if (cpuLabel == "cpu" || cpuLabel == "cpu0") {
+                    long user, nice, system, idle, iowait, irq, softirq, steal, guest, guestNice;
+                    iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal >> guest >> guestNice;
 
-                    // Calculate the used memory percentage
-                    percentage = usedMemory / totalMemory * 100.0;
+                    // Calculate the total CPU time
+                    long totalCpuTime = user + nice + system + idle + iowait + irq + softirq + steal;
+
+                    // Calculate the idle CPU time
+                    long idleCpuTime = idle + iowait;
+
+                    // Calculate the used CPU time
+                    long usedCpuTime = totalCpuTime - idleCpuTime;
+
+                    // Calculate the used CPU percentage
+                    percentage = static_cast<double>(usedCpuTime) / totalCpuTime * 100.0;
+                    break;
                 }
-                break;
             }
         }
-        meminfo.close();
+        stat.close();
     }
 
     return percentage;
 }
+

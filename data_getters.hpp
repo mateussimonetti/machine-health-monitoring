@@ -1,5 +1,5 @@
 #ifndef DATA_GETTERS_HPP
 #define DATA_GETTERS_HPP
     double getUsedDiskPercentage();
-    double getUsedMemoryPercentage();
+    double getUsedCPUPercentage();
 #endif

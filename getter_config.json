@@ -1,0 +1,10 @@
+{
+    "CPU_getter": {
+        "exec_time_ms": 1000,
+        "sensor_id": "222222222222"
+    },
+    "disk_getter": {
+        "exec_time_ms": 500,
+        "sensor_id": "111111111111"
+    }
+}
