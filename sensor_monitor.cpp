@@ -4,12 +4,19 @@
 #include <ctime>
 #include <thread>
 #include <unistd.h>
+#include <fstream>
 #include "json.hpp" // json handling
+#include "data_getters.hpp" 
 #include "mqtt/client.h" // paho mqtt
 #include <iomanip>
 
 #define QOS 1
 #define BROKER_ADDRESS "tcp://localhost:1883"
+
+#include <fstream>
+#include <sstream>
+#include <string>
+
 
 int main(int argc, char* argv[]) {
     std::string clientId = "sensor-monitor";
@@ -32,9 +39,10 @@ int main(int argc, char* argv[]) {
     char hostname[1024];
     gethostname(hostname, 1024);
     std::string machineId(hostname);
+    std::cout << machineId << std::endl;
 
     while (true) {
-       // Get the current time in ISO 8601 format.
+        // Get the current time in ISO 8601 format.
         auto now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
         std::tm* now_tm = std::localtime(&now_c);
@@ -42,16 +50,16 @@ int main(int argc, char* argv[]) {
         ss << std::put_time(now_tm, "%FT%TZ");
         std::string timestamp = ss.str();
 
-        // Generate a random value.
-        int value = rand();
+        // Get the used memory percentage.
+        double usedMemoryPercentage = getUsedMemoryPercentage();
 
         // Construct the JSON message.
         nlohmann::json j;
         j["timestamp"] = timestamp;
-        j["value"] = value;
+        j["value"] = usedMemoryPercentage;
 
         // Publish the JSON message to the appropriate topic.
-        std::string topic = "/sensors/" + machineId + "/rand";
+        std::string topic = "/sensors/" + machineId + "/memory";
         mqtt::message msg(topic, j.dump(), QOS, false);
         std::clog << "message published - topic: " << topic << " - message: " << j.dump() << std::endl;
         client.publish(msg);

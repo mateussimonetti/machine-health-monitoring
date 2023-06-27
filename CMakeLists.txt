@@ -11,7 +11,7 @@ include_directories(${LIBMONGOC_INCLUDE_DIRS} ${LIBBSON_INCLUDE_DIRS})
 
 find_package(PahoMqttCpp REQUIRED)
 
-add_executable(sensor_monitor sensor_monitor.cpp)
+add_executable(sensor_monitor sensor_monitor.cpp data_getters.cpp)
 target_link_libraries(sensor_monitor PahoMqttCpp::paho-mqttpp3)
 
 add_executable(data_processor data_processor.cpp)
