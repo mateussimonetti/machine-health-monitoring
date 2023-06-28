@@ -17,63 +17,56 @@
 #include <sstream>
 #include <string>
 
+std::string now() {
+    // Get the current time in ISO 8601 format
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm* now_tm = std::localtime(&now_c);
+    std::stringstream ss;
+    ss << std::put_time(now_tm, "%FT%TZ");
+    std::string timestamp = ss.str();
+    return timestamp;
+}
+
 // Function for the first thread to publish memory usage
 void publishDiskUsage(const std::string& machineId, nlohmann::json config, mqtt::client& client) {
+    std::clog << "publishDiskUsage" << std::endl;
+    nlohmann::json j;
     while (true) {
-        // Get the current time in ISO 8601 format
-        auto now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* now_tm = std::localtime(&now_c);
-        std::stringstream ss;
-        ss << std::put_time(now_tm, "%FT%TZ");
-        std::string timestamp = ss.str();
-
-        // Get the used memory percentage
-        double usedDiskPercentage = getUsedDiskPercentage();
-
         // Construct the JSON message
-        nlohmann::json j;
-        j["timestamp"] = timestamp;
-        j["value"] = usedDiskPercentage;
+
+        j["timestamp"] = now();
+        j["value"] = getUsedDiskPercentage();
+        std::string sensorId = config["sensor_id"]; 
 
         // Publish the JSON message to the appropriate topic
-        std::string topic = "/sensors/" + machineId + "/memory";
+        std::string topic = "/sensors/" + machineId + "/" + sensorId;
         mqtt::message msg(topic, j.dump(), QOS, false);
         std::clog << "Memory message published - topic: " << topic << " - message: " << j.dump() << std::endl;
         client.publish(msg);
 
         // Sleep for some time
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(config["exec_time_ms"]));
     }
 }
 
 // Function for the second thread to publish CPU usage
-void publishCPUUsage(const std::string& machineId, mqtt::client& client) {
+void publishCPUUsage(const std::string& machineId, nlohmann::json config, mqtt::client& client) {
+    std::clog << "publishCPUUsage" << std::endl;
+    nlohmann::json j;
     while (true) {
-        // Get the current time in ISO 8601 format
-        auto now = std::chrono::system_clock::now();
-        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* now_tm = std::localtime(&now_c);
-        std::stringstream ss;
-        ss << std::put_time(now_tm, "%FT%TZ");
-        std::string timestamp = ss.str();
-
-        // Get the used CPU percentage
-        double usedCPUPercentage = getUsedCPUPercentage();
-
-        // Construct the JSON message
-        nlohmann::json j;
-        j["timestamp"] = timestamp;
-        j["value"] = usedCPUPercentage;
+        j["timestamp"] = now();
+        j["value"] = getUsedDiskPercentage();
+        std::string sensorId = config["sensor_id"]; 
 
         // Publish the JSON message to the appropriate topic
-        std::string topic = "/sensors/" + machineId + "/cpu";
+        std::string topic = "/sensors/" + machineId + "/" + sensorId;
         mqtt::message msg(topic, j.dump(), QOS, false);
         std::clog << "CPU message published - topic: " << topic << " - message: " << j.dump() << std::endl;
         client.publish(msg);
 
         // Sleep for some time
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(config["exec_time_ms"]));
     }
 }
 
@@ -104,10 +97,10 @@ int main() {
     nlohmann::json data = nlohmann::json::parse(f);
 
     // Start the memory usage publishing thread
-    std::thread memoryThread(publishDiskUsage, data['disk_getter'], std::ref(client));
+    std::thread memoryThread(publishDiskUsage, machineId, data["disk_getter"], std::ref(client));
 
     // Start the CPU usage publishing thread
-    std::thread cpuThread(publishCPUUsage, data['CPU_getter'], std::ref(client));
+    std::thread cpuThread(publishCPUUsage, machineId, data["CPU_getter"], std::ref(client));
 
     // Wait for the threads to finish (which will be never in this case, since the loops run indefinitely)
     memoryThread.join();
