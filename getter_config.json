@@ -1,10 +1,10 @@
 {
     "CPU_getter": {
         "exec_time_ms": 1000,
-        "sensor_id": "222222222222"
+        "sensor_id": "0faf002c-1619-11ee-be56-0242ac120002"
     },
     "disk_getter": {
         "exec_time_ms": 500,
-        "sensor_id": "111111111111"
+        "sensor_id": "16c0c7d8-1619-11ee-be56-0242ac120002"
     }
 }

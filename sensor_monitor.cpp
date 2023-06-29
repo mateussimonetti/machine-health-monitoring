@@ -73,6 +73,7 @@ void publishCPUUsage(const std::string& machineId, nlohmann::json config, mqtt::
 int main() {
     std::string clientId = "sensor-monitor";
     mqtt::client client(BROKER_ADDRESS, clientId);
+    nlohmann::json data;
 
     // Connect to the MQTT broker.
     mqtt::connect_options connOpts;
@@ -93,8 +94,14 @@ int main() {
     std::string machineId(hostname);
 
     //Get the config file
-    std::ifstream f("getter_config.json");
-    nlohmann::json data = nlohmann::json::parse(f);
+    std::ifstream f("/workspaces/machine-health-monitoring/getter_config.json");
+    if (!f.is_open()) {
+        std::cout << "Failed to open the file." << std::endl;
+    } else {
+        std::string fileContent((std::istreambuf_iterator<char>(f)),
+                                std::istreambuf_iterator<char>());
+        data = nlohmann::json::parse(fileContent);
+    }
 
     // Start the memory usage publishing thread
     std::thread memoryThread(publishDiskUsage, machineId, data["disk_getter"], std::ref(client));
@@ -104,7 +111,7 @@ int main() {
 
     // Wait for the threads to finish (which will be never in this case, since the loops run indefinitely)
     memoryThread.join();
-    cpuThread.join();
+    // cpuThread.join();
 
     return 0;
 }
